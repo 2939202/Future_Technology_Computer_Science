@@ -548,7 +548,8 @@ function submit() {
   const val = document.getElementById('answer-input').value.trim();
   if (!val) return;
   const result = isCorrect(val, QUESTIONS[current].a) ? 'correct' : 'wrong';
-  answered[current] = result;
+// 상태와 입력값을 객체로 함께 저장합니다.
+  answered[current] = { status: result, userAns: val };
 
   if (result === 'wrong') {
     const sec = document.getElementById('quiz-section');
@@ -590,7 +591,7 @@ function showReview() {
 
   const list = document.getElementById('review-list');
   if (wrongList.length === 0) {
-    list.innerHTML = '<div class="no-wrong">틀린 문제가 없습니다 🎉</div>';
+    list.innerHTML = '<div class="no-wrong">틀린 문제가 없습니다 야호</div>';
     return;
   }
 
