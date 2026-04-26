@@ -141,8 +141,13 @@
   .result-detail { display: flex; justify-content: center; gap: 40px; margin-bottom: 40px; }
   .result-detail .item { font-size: 13px; color: #888; }
   .result-detail .item b { display: block; font-size: 24px; color: #000; margin-bottom: 2px; }
+  .result-btns { display: flex; gap: 12px; justify-content: center; }
   .btn-restart {
     background: #000; color: #fff; border: none; border-radius: 4px;
+    padding: 12px 32px; font-size: 14px; font-family: inherit; cursor: pointer;
+  }
+  .btn-review {
+    background: #fff; color: #000; border: 1px solid #000; border-radius: 4px;
     padding: 12px 32px; font-size: 14px; font-family: inherit; cursor: pointer;
   }
 
@@ -162,61 +167,141 @@
     75%{transform:translateX(6px)}
   }
   .shake { animation: shake 0.25s ease; }
+
+  /* ── 표지 페이지 ── */
+  #cover-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 60vh;
+  }
+  .cover-title {
+    font-size: clamp(2.4rem, 8vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+    line-height: 1.1;
+  }
+  .cover-notice {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.8;
+    margin-bottom: 40px;
+    border-left: 2px solid #ddd;
+    padding-left: 14px;
+  }
+  .btn-start {
+    background: #000; color: #fff; border: none; border-radius: 4px;
+    padding: 14px 40px; font-size: 15px; font-family: inherit; cursor: pointer;
+    align-self: flex-start;
+  }
+
+  /* ── 오답노트 페이지 ── */
+  #review-screen { display: none; padding-top: 8px; }
+  .review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .review-title { font-size: 20px; font-weight: 700; }
+  .btn-back {
+    background: none; border: 1px solid #ddd; border-radius: 4px;
+    padding: 8px 18px; font-size: 13px; font-family: inherit; cursor: pointer; color: #000;
+  }
+  .btn-back:hover { border-color: #000; }
+  .review-item {
+    border-top: 1px solid #eee;
+    padding: 20px 0;
+  }
+  .review-item:last-child { border-bottom: 1px solid #eee; }
+  .review-q { font-size: 15px; line-height: 1.6; margin-bottom: 10px; font-weight: 500; }
+  .review-meta { font-size: 13px; color: #888; }
+  .review-meta .my-ans { color: #999; }
+  .review-meta .right-ans { color: #000; font-weight: 600; }
+  .review-qnum { font-size: 11px; color: #bbb; margin-bottom: 6px; }
+  .no-wrong { color: #888; font-size: 14px; padding: 40px 0; text-align: center; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="progress-meta">
-    <span id="prog-label">0 / 0</span>
-    <span id="prog-pct">0%</span>
-  </div>
-  <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-
-  <!-- 모바일 스코어 -->
-  <div class="score-row">
-    <span>정답 <b id="sc-correct">0</b></span>
-    <span>오답 <b id="sc-wrong">0</b></span>
-    <span>남은 문제 <b id="sc-remain">0</b></span>
+  <!-- ══ 표지 ══ -->
+  <div id="cover-screen">
+    <div class="cover-title">미기컴 102</div>
+    <div class="cover-notice">
+      대소문자와 띄어쓰기 구분없이 정답처리함<br>
+      일요일 18시 42분 공지를 반영해 RGB문항 제외함
+    </div>
+    <button class="btn-start" onclick="startQuiz()">테스트 시작하기</button>
   </div>
 
-  <div class="desktop-grid">
-    <!-- 메인 퀴즈 영역 -->
-    <div>
-      <div id="quiz-section">
-        <div class="q-number" id="q-number">Q1</div>
-        <div class="q-text" id="q-text"></div>
-        <div class="input-row">
-          <input class="answer-input" id="answer-input" type="text" placeholder="정답 입력" autocomplete="off" />
-          <button class="btn" id="btn-submit">확인</button>
-        </div>
-        <div class="feedback" id="feedback"></div>
-        <div class="advance-bar" id="advance-bar"></div>
-        <hr class="divider">
-        <div class="nav-row">
-          <button class="btn-nav" id="btn-prev">← 이전</button>
-          <button class="btn-nav" id="btn-next">다음 →</button>
-        </div>
-      </div>
+  <!-- ══ 퀴즈 본체 ══ -->
+  <div id="quiz-wrap" style="display:none;">
+    <div class="progress-meta">
+      <span id="prog-label">0 / 0</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
 
-      <div id="result-screen">
-        <div class="result-score" id="res-pct">0%</div>
-        <div class="result-sub">모든 문제 완료</div>
-        <div class="result-detail">
-          <div class="item"><b id="res-correct">0</b>정답</div>
-          <div class="item"><b id="res-wrong">0</b>오답</div>
-        </div>
-        <button class="btn-restart" onclick="restart()">다시 풀기</button>
-      </div>
+    <!-- 모바일 스코어 -->
+    <div class="score-row">
+      <span>정답 <b id="sc-correct">0</b></span>
+      <span>오답 <b id="sc-wrong">0</b></span>
+      <span>남은 문제 <b id="sc-remain">0</b></span>
     </div>
 
-    <!-- 데스크톱 사이드바 -->
-    <div class="sidebar">
-      <div class="sidebar-score">
-        <div class="item"><span>정답</span><b id="sd-correct">0</b></div>
-        <div class="item"><span>오답</span><b id="sd-wrong">0</b></div>
-        <div class="item"><span>남은 문제</span><b id="sd-remain">0</b></div>
-        <div class="item"><span>진행률</span><b id="sd-pct">0%</b></div>
+    <div class="desktop-grid">
+      <!-- 메인 퀴즈 영역 -->
+      <div>
+        <div id="quiz-section">
+          <div class="q-number" id="q-number">Q1</div>
+          <div class="q-text" id="q-text"></div>
+          <div class="input-row">
+            <input class="answer-input" id="answer-input" type="text" placeholder="정답 입력" autocomplete="off" />
+            <button class="btn" id="btn-submit">확인</button>
+          </div>
+          <div class="feedback" id="feedback"></div>
+          <div class="advance-bar" id="advance-bar"></div>
+          <hr class="divider">
+          <div class="nav-row">
+            <button class="btn-nav" id="btn-prev">← 이전</button>
+            <button class="btn-nav" id="btn-next">다음 →</button>
+          </div>
+        </div>
+
+        <!-- 결과 화면 -->
+        <div id="result-screen">
+          <div class="result-score" id="res-pct">0%</div>
+          <div class="result-sub">모든 문제 완료</div>
+          <div class="result-detail">
+            <div class="item"><b id="res-correct">0</b>정답</div>
+            <div class="item"><b id="res-wrong">0</b>오답</div>
+          </div>
+          <div class="result-btns">
+            <button class="btn-restart" onclick="restart()">다시 풀기</button>
+            <button class="btn-review" onclick="showReview()">오답 모아보기</button>
+          </div>
+        </div>
+
+        <!-- 오답노트 화면 -->
+        <div id="review-screen">
+          <div class="review-header">
+            <div class="review-title">오답노트</div>
+            <button class="btn-back" onclick="backToResult()">← 결과로</button>
+          </div>
+          <div id="review-list"></div>
+        </div>
+      </div>
+
+      <!-- 데스크톱 사이드바 -->
+      <div class="sidebar">
+        <div class="sidebar-score">
+          <div class="item"><span>정답</span><b id="sd-correct">0</b></div>
+          <div class="item"><span>오답</span><b id="sd-wrong">0</b></div>
+          <div class="item"><span>남은 문제</span><b id="sd-remain">0</b></div>
+          <div class="item"><span>진행률</span><b id="sd-pct">0%</b></div>
+        </div>
       </div>
     </div>
   </div>
@@ -255,16 +340,6 @@ const QUESTIONS_RAW = [
   { q: "(  )는 네트워크에서 1초 동안 보내는 데이터의 양을 나타내는 단위이다.", a: "bps" },
   { q: "이미지를 종이에 출력할 때는 (  ) 색상을 사용한다.", a: "CMYK" },
   { q: "모니터에 색상을 표현할 때는 (  ) 색상을 사용한다.", a: "RGB" },
-  { q: "RGB (255, 0, 0)의 색상은 (  )이다.", a: "빨간색" },
-  { q: "RGB (0, 255, 0)의 색상은 (  )이다.", a: "초록색" },
-  { q: "RGB (0, 0, 255)의 색상은 (  )이다.", a: "파란색" },
-  { q: "RGB (0, 0, 0)의 색상은 (  )이다.", a: "검정색" },
-  { q: "RGB (255, 255, 255)의 색상은 (  )이다.", a: "흰색" },
-  { q: "빨간색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#ff0000" },
-  { q: "초록색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#00ff00" },
-  { q: "파란색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#0000ff" },
-  { q: "검은색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#000000" },
-  { q: "하얀색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#ffffff" },
   { q: "아스키코드가 표현하는 데이터의 종류는 (  )이다.", a: "문자" },
   { q: "아스키코드는 문자 하나를 저장하는 데 (  )비트를 사용한다.", a: "8" },
   { q: "(  )는 세계 각국의 문자를 통일되게 표현하고 다룰 수 있도록 만들어진 국제적인 코드 규약이다.", a: "유니코드" },
@@ -352,12 +427,21 @@ let QUESTIONS = [];
 let current = 0;
 let answered = [];
 let advanceTimer = null;
+let justSubmitted = false; // 확인 직후인지 여부
 const ADVANCE_DELAY = 1000; // ms
+
+// ── 표지 → 퀴즈 시작 ──────────────────────────────────────────────────
+function startQuiz() {
+  document.getElementById('cover-screen').style.display = 'none';
+  document.getElementById('quiz-wrap').style.display = 'block';
+  init();
+}
 
 function init() {
   QUESTIONS = shuffle(QUESTIONS_RAW);
   answered = Array(QUESTIONS.length).fill(null);
   current = 0;
+  justSubmitted = false;
   render();
 }
 
@@ -393,6 +477,8 @@ function updateScores() {
 }
 
 function render() {
+  // 자동넘김 타이머는 submit() 직후에만 scheduleAdvance로 설정됨
+  // 이전/다음 버튼 클릭 시에는 타이머를 취소하고 render만 호출
   if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
 
   const total = QUESTIONS.length;
@@ -425,21 +511,23 @@ function render() {
     btnSub.disabled = true;
     fb.className = 'feedback correct show';
     fb.innerHTML = '✓ 정답';
-    scheduleAdvance(bar);
+    // 자동넘김: 확인 직후(justSubmitted)에만
+    if (justSubmitted) scheduleAdvance(bar);
   } else {
     input.disabled = true;
     btnSub.disabled = true;
     fb.className = 'feedback wrong show';
     fb.innerHTML = `✗ 오답<div class="correct-answer">정답: ${q.a}</div>`;
-    scheduleAdvance(bar);
+    if (justSubmitted) scheduleAdvance(bar);
   }
+
+  justSubmitted = false; // 렌더 후 초기화
 
   document.getElementById('btn-prev').disabled = current === 0;
   document.getElementById('btn-next').disabled = current === total - 1;
 }
 
 function scheduleAdvance(bar) {
-  // 진행 바 애니메이션
   requestAnimationFrame(() => {
     bar.style.transition = `width ${ADVANCE_DELAY}ms linear`;
     bar.style.width = '100%';
@@ -450,6 +538,7 @@ function scheduleAdvance(bar) {
       showResult();
     } else if (current < QUESTIONS.length - 1) {
       current++;
+      justSubmitted = false;
       render();
     }
   }, ADVANCE_DELAY);
@@ -468,12 +557,14 @@ function submit() {
     sec.classList.add('shake');
   }
 
+  justSubmitted = true; // 확인 버튼으로 제출했음을 표시
   render();
 }
 
 function showResult() {
   document.getElementById('quiz-section').style.display = 'none';
   document.getElementById('result-screen').style.display = 'block';
+  document.getElementById('review-screen').style.display = 'none';
   const correct = answered.filter(x => x === 'correct').length;
   const wrong   = answered.filter(x => x === 'wrong').length;
   document.getElementById('res-correct').textContent = correct;
@@ -484,21 +575,54 @@ function showResult() {
 function restart() {
   document.getElementById('quiz-section').style.display = '';
   document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('review-screen').style.display = 'none';
   init();
 }
 
+// ── 오답노트 ──────────────────────────────────────────────────────────
+function showReview() {
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('review-screen').style.display = 'block';
+
+  const wrongList = QUESTIONS
+    .map((q, i) => ({ q, i, state: answered[i] }))
+    .filter(x => x.state === 'wrong');
+
+  const list = document.getElementById('review-list');
+  if (wrongList.length === 0) {
+    list.innerHTML = '<div class="no-wrong">틀린 문제가 없습니다 🎉</div>';
+    return;
+  }
+
+  list.innerHTML = wrongList.map((x, idx) => `
+    <div class="review-item">
+      <div class="review-qnum">오답 ${idx + 1}</div>
+      <div class="review-q">${x.q.q}</div>
+      <div class="review-meta">
+        <span class="right-ans">정답: ${x.q.a}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function backToResult() {
+  document.getElementById('review-screen').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'block';
+}
+
+// ── 이벤트 ────────────────────────────────────────────────────────────
 document.getElementById('btn-submit').addEventListener('click', submit);
 document.getElementById('answer-input').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 document.getElementById('btn-prev').addEventListener('click', () => {
   if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
+  justSubmitted = false;
   if (current > 0) { current--; render(); }
 });
 document.getElementById('btn-next').addEventListener('click', () => {
   if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
+  justSubmitted = false;
   if (current < QUESTIONS.length - 1) { current++; render(); }
 });
-
-init();
 </script>
 </body>
 </html>
