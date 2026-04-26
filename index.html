@@ -19,7 +19,26 @@
     padding: 48px 20px 80px;
   }
 
-  .wrap { width: 100%; max-width: 640px; }
+  /* 모바일: 640 / 데스크톱: 꽉 채우되 max 1100 */
+  .wrap {
+    width: 100%;
+    max-width: 640px;
+  }
+  @media (min-width: 900px) {
+    .wrap { max-width: 1100px; }
+    body { padding: 56px 48px 80px; }
+  }
+
+  /* 데스크톱: 좌우 2열 레이아웃 */
+  @media (min-width: 900px) {
+    .desktop-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 48px;
+      align-items: start;
+    }
+    .sidebar { position: sticky; top: 48px; }
+  }
 
   .progress-meta {
     display: flex;
@@ -34,8 +53,35 @@
   .score-row { display: flex; gap: 16px; font-size: 13px; color: #888; margin-bottom: 40px; }
   .score-row b { color: #000; }
 
+  /* 사이드바 스코어 (데스크톱) */
+  @media (min-width: 900px) {
+    .score-row { display: none; }
+    .sidebar-score {
+      background: #f8f8f8;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .sidebar-score .item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #888;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .sidebar-score .item:last-child { border-bottom: none; }
+    .sidebar-score .item b { color: #000; }
+  }
+  @media (max-width: 899px) {
+    .sidebar { display: none; }
+  }
+
   .q-number { font-size: 12px; color: #aaa; margin-bottom: 12px; }
-  .q-text { font-size: 17px; line-height: 1.6; margin-bottom: 28px; font-weight: 500; }
+  .q-text { font-size: 19px; line-height: 1.65; margin-bottom: 32px; font-weight: 500; }
+  @media (min-width: 900px) {
+    .q-text { font-size: 22px; }
+  }
 
   .input-row { display: flex; gap: 8px; }
   .answer-input {
@@ -47,6 +93,9 @@
     font-family: inherit;
     outline: none;
     transition: border-color 0.15s;
+  }
+  @media (min-width: 900px) {
+    .answer-input { padding: 13px 18px; font-size: 16px; }
   }
   .answer-input:focus { border-color: #000; }
   .answer-input:disabled { background: #f5f5f5; color: #999; }
@@ -85,6 +134,7 @@
   .btn-nav:hover { border-color: #000; }
   .btn-nav:disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
 
+  /* 결과 */
   #result-screen { display: none; text-align: center; padding-top: 40px; }
   .result-score { font-size: 56px; font-weight: 700; letter-spacing: -2px; margin-bottom: 8px; }
   .result-sub { font-size: 14px; color: #888; margin-bottom: 40px; }
@@ -94,6 +144,16 @@
   .btn-restart {
     background: #000; color: #fff; border: none; border-radius: 4px;
     padding: 12px 32px; font-size: 14px; font-family: inherit; cursor: pointer;
+  }
+
+  /* 자동 넘김 오버레이 */
+  .advance-bar {
+    height: 2px;
+    background: #000;
+    width: 0%;
+    margin-top: 10px;
+    transition: none;
+    border-radius: 2px;
   }
 
   @keyframes shake {
@@ -113,40 +173,57 @@
   </div>
   <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
 
+  <!-- 모바일 스코어 -->
   <div class="score-row">
     <span>정답 <b id="sc-correct">0</b></span>
     <span>오답 <b id="sc-wrong">0</b></span>
     <span>남은 문제 <b id="sc-remain">0</b></span>
   </div>
 
-  <div id="quiz-section">
-    <div class="q-number" id="q-number">Q1</div>
-    <div class="q-text" id="q-text"></div>
-    <div class="input-row">
-      <input class="answer-input" id="answer-input" type="text" placeholder="정답 입력" autocomplete="off" />
-      <button class="btn" id="btn-submit">확인</button>
-    </div>
-    <div class="feedback" id="feedback"></div>
-    <hr class="divider">
-    <div class="nav-row">
-      <button class="btn-nav" id="btn-prev">← 이전</button>
-      <button class="btn-nav" id="btn-next">다음 →</button>
-    </div>
-  </div>
+  <div class="desktop-grid">
+    <!-- 메인 퀴즈 영역 -->
+    <div>
+      <div id="quiz-section">
+        <div class="q-number" id="q-number">Q1</div>
+        <div class="q-text" id="q-text"></div>
+        <div class="input-row">
+          <input class="answer-input" id="answer-input" type="text" placeholder="정답 입력" autocomplete="off" />
+          <button class="btn" id="btn-submit">확인</button>
+        </div>
+        <div class="feedback" id="feedback"></div>
+        <div class="advance-bar" id="advance-bar"></div>
+        <hr class="divider">
+        <div class="nav-row">
+          <button class="btn-nav" id="btn-prev">← 이전</button>
+          <button class="btn-nav" id="btn-next">다음 →</button>
+        </div>
+      </div>
 
-  <div id="result-screen">
-    <div class="result-score" id="res-pct">0%</div>
-    <div class="result-sub">모든 문제 완료</div>
-    <div class="result-detail">
-      <div class="item"><b id="res-correct">0</b>정답</div>
-      <div class="item"><b id="res-wrong">0</b>오답</div>
+      <div id="result-screen">
+        <div class="result-score" id="res-pct">0%</div>
+        <div class="result-sub">모든 문제 완료</div>
+        <div class="result-detail">
+          <div class="item"><b id="res-correct">0</b>정답</div>
+          <div class="item"><b id="res-wrong">0</b>오답</div>
+        </div>
+        <button class="btn-restart" onclick="restart()">다시 풀기</button>
+      </div>
     </div>
-    <button class="btn-restart" onclick="restart()">다시 풀기</button>
+
+    <!-- 데스크톱 사이드바 -->
+    <div class="sidebar">
+      <div class="sidebar-score">
+        <div class="item"><span>정답</span><b id="sd-correct">0</b></div>
+        <div class="item"><span>오답</span><b id="sd-wrong">0</b></div>
+        <div class="item"><span>남은 문제</span><b id="sd-remain">0</b></div>
+        <div class="item"><span>진행률</span><b id="sd-pct">0%</b></div>
+      </div>
+    </div>
   </div>
 
 </div>
 <script>
-const QUESTIONS = [
+const QUESTIONS_RAW = [
   { q: "(  )은 온갖 사물을 인터넷에 연결하여 부가가치를 높이는 기술이다.", a: "사물 인터넷" },
   { q: "(  )는 엄청난 양의 데이터에서 가치 있는 정보를 추출하는 기술이다.", a: "빅데이터" },
   { q: "다양한 정보를 체계적으로 모아놓은 것을 (  )라고 한다.", a: "데이터베이스" },
@@ -164,7 +241,8 @@ const QUESTIONS = [
   { q: "기울기와 방향을 인식하는 센서는 (  ) 센서이다.", a: "자이로" },
   { q: "(  )은 어떤 문제를 해결하기 위한 절차나 방법을 의미한다.", a: "알고리즘" },
   { q: "(  )는 컴퓨터를 관리하는 규칙과 절차를 규정한 소프트웨어이다.", a: "운영체제" },
-  { q: "컴퓨터의 운영체제는 (  )과 사용자 인터페이스로 구성되며, (  )은 운영체제에서 핵심 기능을 담당하는 부분이다.", a: "커널" },
+  { q: "컴퓨터의 운영체제는 (  )과 사용자 인터페이스로 구성된다." , a: "커널" },
+  { q: "(  )은 운영체제에서 핵심 기능을 담당하는 부분이다.", a: "커널" },
   { q: "(  )는 커널에 명령을 내리거나 처리 결과를 받는다.", a: "사용자 인터페이스" },
   { q: "제품 사용법을 따로 설명하지 않아도 조작이 가능한 인터페이스를 (  ) 인터페이스라고 한다.", a: "사용자 경험" },
   { q: "웹 브라우저에서 연결된 문서나 자료로 이동하는 참조 고리를 (  )라고 한다.", a: "하이퍼 링크" },
@@ -260,10 +338,24 @@ const QUESTIONS = [
   { q: "(  ) 데이터는 책, 문서처럼 형식을 가지는 데이터를 의미한다.", a: "정형" },
 ];
 
+// ── 셔플 ──────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let QUESTIONS = [];
 let current = 0;
 let answered = [];
+let advanceTimer = null;
+const ADVANCE_DELAY = 1000; // ms
 
 function init() {
+  QUESTIONS = shuffle(QUESTIONS_RAW);
   answered = Array(QUESTIONS.length).fill(null);
   current = 0;
   render();
@@ -277,22 +369,37 @@ function isCorrect(input, answer) {
   return normalize(input) === normalize(answer);
 }
 
-function render() {
+function updateScores() {
   const total = QUESTIONS.length;
-  const q = QUESTIONS[current];
-  const state = answered[current];
-
   const done = answered.filter(x => x !== null).length;
   const pct = Math.round(done / total * 100);
+  const correct = answered.filter(x => x === 'correct').length;
+  const wrong   = answered.filter(x => x === 'wrong').length;
+
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('prog-label').textContent = `${done} / ${total}`;
   document.getElementById('prog-pct').textContent = pct + '%';
 
-  const correct = answered.filter(x => x === 'correct').length;
-  const wrong   = answered.filter(x => x === 'wrong').length;
+  // 모바일
   document.getElementById('sc-correct').textContent = correct;
   document.getElementById('sc-wrong').textContent   = wrong;
   document.getElementById('sc-remain').textContent  = total - done;
+
+  // 사이드바
+  document.getElementById('sd-correct').textContent = correct;
+  document.getElementById('sd-wrong').textContent   = wrong;
+  document.getElementById('sd-remain').textContent  = total - done;
+  document.getElementById('sd-pct').textContent     = pct + '%';
+}
+
+function render() {
+  if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
+
+  const total = QUESTIONS.length;
+  const q = QUESTIONS[current];
+  const state = answered[current];
+
+  updateScores();
 
   document.getElementById('q-number').textContent = `Q${current + 1} / ${total}`;
   document.getElementById('q-text').textContent = q.q;
@@ -300,6 +407,10 @@ function render() {
   const input  = document.getElementById('answer-input');
   const btnSub = document.getElementById('btn-submit');
   const fb     = document.getElementById('feedback');
+  const bar    = document.getElementById('advance-bar');
+
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
 
   if (state === null) {
     input.value = '';
@@ -314,15 +425,34 @@ function render() {
     btnSub.disabled = true;
     fb.className = 'feedback correct show';
     fb.innerHTML = '✓ 정답';
+    scheduleAdvance(bar);
   } else {
     input.disabled = true;
     btnSub.disabled = true;
     fb.className = 'feedback wrong show';
     fb.innerHTML = `✗ 오답<div class="correct-answer">정답: ${q.a}</div>`;
+    scheduleAdvance(bar);
   }
 
   document.getElementById('btn-prev').disabled = current === 0;
   document.getElementById('btn-next').disabled = current === total - 1;
+}
+
+function scheduleAdvance(bar) {
+  // 진행 바 애니메이션
+  requestAnimationFrame(() => {
+    bar.style.transition = `width ${ADVANCE_DELAY}ms linear`;
+    bar.style.width = '100%';
+  });
+
+  advanceTimer = setTimeout(() => {
+    if (answered.every(x => x !== null)) {
+      showResult();
+    } else if (current < QUESTIONS.length - 1) {
+      current++;
+      render();
+    }
+  }, ADVANCE_DELAY);
 }
 
 function submit() {
@@ -339,7 +469,6 @@ function submit() {
   }
 
   render();
-  if (answered.every(x => x !== null)) setTimeout(showResult, 500);
 }
 
 function showResult() {
@@ -360,8 +489,14 @@ function restart() {
 
 document.getElementById('btn-submit').addEventListener('click', submit);
 document.getElementById('answer-input').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-document.getElementById('btn-prev').addEventListener('click', () => { if (current > 0) { current--; render(); } });
-document.getElementById('btn-next').addEventListener('click', () => { if (current < QUESTIONS.length - 1) { current++; render(); } });
+document.getElementById('btn-prev').addEventListener('click', () => {
+  if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
+  if (current > 0) { current--; render(); }
+});
+document.getElementById('btn-next').addEventListener('click', () => {
+  if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
+  if (current < QUESTIONS.length - 1) { current++; render(); }
+});
 
 init();
 </script>
