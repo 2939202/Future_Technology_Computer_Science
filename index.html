@@ -19,7 +19,6 @@
     padding: 48px 20px 80px;
   }
 
-  /* 모바일: 640 / 데스크톱: 꽉 채우되 max 1100 */
   .wrap {
     width: 100%;
     max-width: 640px;
@@ -29,7 +28,6 @@
     body { padding: 56px 48px 80px; }
   }
 
-  /* 데스크톱: 좌우 2열 레이아웃 */
   @media (min-width: 900px) {
     .desktop-grid {
       display: grid;
@@ -53,7 +51,6 @@
   .score-row { display: flex; gap: 16px; font-size: 13px; color: #888; margin-bottom: 40px; }
   .score-row b { color: #000; }
 
-  /* 사이드바 스코어 (데스크톱) */
   @media (min-width: 900px) {
     .score-row { display: none; }
     .sidebar-score {
@@ -134,7 +131,6 @@
   .btn-nav:hover { border-color: #000; }
   .btn-nav:disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
 
-  /* 결과 */
   #result-screen { display: none; text-align: center; padding-top: 40px; }
   .result-score { font-size: 56px; font-weight: 700; letter-spacing: -2px; margin-bottom: 8px; }
   .result-sub { font-size: 14px; color: #888; margin-bottom: 40px; }
@@ -151,7 +147,6 @@
     padding: 12px 32px; font-size: 14px; font-family: inherit; cursor: pointer;
   }
 
-  /* 자동 넘김 오버레이 */
   .advance-bar {
     height: 2px;
     background: #000;
@@ -168,7 +163,6 @@
   }
   .shake { animation: shake 0.25s ease; }
 
-  /* ── 표지 페이지 ── */
   #cover-screen {
     display: flex;
     flex-direction: column;
@@ -196,7 +190,6 @@
     align-self: flex-start;
   }
 
-  /* ── 오답노트 페이지 ── */
   #review-screen { display: none; padding-top: 8px; }
   .review-header {
     display: flex;
@@ -216,8 +209,8 @@
   }
   .review-item:last-child { border-bottom: 1px solid #eee; }
   .review-q { font-size: 15px; line-height: 1.6; margin-bottom: 10px; font-weight: 500; }
-  .review-meta { font-size: 13px; color: #888; }
-  .review-meta .my-ans { color: #999; }
+  .review-meta { font-size: 13px; color: #888; display: flex; flex-direction: column; gap: 4px; }
+  .review-meta .my-ans { color: #bbb; }
   .review-meta .right-ans { color: #000; font-weight: 600; }
   .review-qnum { font-size: 11px; color: #bbb; margin-bottom: 6px; }
   .no-wrong { color: #888; font-size: 14px; padding: 40px 0; text-align: center; }
@@ -226,7 +219,7 @@
 <body>
 <div class="wrap">
 
-  <!-- ══ 표지 ══ -->
+  <!-- 표지 -->
   <div id="cover-screen">
     <div class="cover-title">미기컴 102</div>
     <div class="cover-notice">
@@ -236,7 +229,7 @@
     <button class="btn-start" onclick="startQuiz()">테스트 시작하기</button>
   </div>
 
-  <!-- ══ 퀴즈 본체 ══ -->
+  <!-- 퀴즈 본체 -->
   <div id="quiz-wrap" style="display:none;">
     <div class="progress-meta">
       <span id="prog-label">0 / 0</span>
@@ -244,7 +237,6 @@
     </div>
     <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
 
-    <!-- 모바일 스코어 -->
     <div class="score-row">
       <span>정답 <b id="sc-correct">0</b></span>
       <span>오답 <b id="sc-wrong">0</b></span>
@@ -252,7 +244,6 @@
     </div>
 
     <div class="desktop-grid">
-      <!-- 메인 퀴즈 영역 -->
       <div>
         <div id="quiz-section">
           <div class="q-number" id="q-number">Q1</div>
@@ -413,7 +404,6 @@ const QUESTIONS_RAW = [
   { q: "(  ) 데이터는 책, 문서처럼 형식을 가지는 데이터를 의미한다.", a: "정형" },
 ];
 
-// ── 셔플 ──────────────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -425,12 +415,12 @@ function shuffle(arr) {
 
 let QUESTIONS = [];
 let current = 0;
-let answered = [];
+let answered = [];    // 'correct' | 'wrong' | null
+let userAnswers = []; // 사용자가 입력한 답 (문자열)
 let advanceTimer = null;
-let justSubmitted = false; // 확인 직후인지 여부
-const ADVANCE_DELAY = 1000; // ms
+let justSubmitted = false;
+const ADVANCE_DELAY = 1000;
 
-// ── 표지 → 퀴즈 시작 ──────────────────────────────────────────────────
 function startQuiz() {
   document.getElementById('cover-screen').style.display = 'none';
   document.getElementById('quiz-wrap').style.display = 'block';
@@ -440,6 +430,7 @@ function startQuiz() {
 function init() {
   QUESTIONS = shuffle(QUESTIONS_RAW);
   answered = Array(QUESTIONS.length).fill(null);
+  userAnswers = Array(QUESTIONS.length).fill('');
   current = 0;
   justSubmitted = false;
   render();
@@ -464,12 +455,10 @@ function updateScores() {
   document.getElementById('prog-label').textContent = `${done} / ${total}`;
   document.getElementById('prog-pct').textContent = pct + '%';
 
-  // 모바일
   document.getElementById('sc-correct').textContent = correct;
   document.getElementById('sc-wrong').textContent   = wrong;
   document.getElementById('sc-remain').textContent  = total - done;
 
-  // 사이드바
   document.getElementById('sd-correct').textContent = correct;
   document.getElementById('sd-wrong').textContent   = wrong;
   document.getElementById('sd-remain').textContent  = total - done;
@@ -477,8 +466,6 @@ function updateScores() {
 }
 
 function render() {
-  // 자동넘김 타이머는 submit() 직후에만 scheduleAdvance로 설정됨
-  // 이전/다음 버튼 클릭 시에는 타이머를 취소하고 render만 호출
   if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
 
   const total = QUESTIONS.length;
@@ -511,9 +498,9 @@ function render() {
     btnSub.disabled = true;
     fb.className = 'feedback correct show';
     fb.innerHTML = '✓ 정답';
-    // 자동넘김: 확인 직후(justSubmitted)에만
     if (justSubmitted) scheduleAdvance(bar);
   } else {
+    input.value = userAnswers[current];
     input.disabled = true;
     btnSub.disabled = true;
     fb.className = 'feedback wrong show';
@@ -521,7 +508,7 @@ function render() {
     if (justSubmitted) scheduleAdvance(bar);
   }
 
-  justSubmitted = false; // 렌더 후 초기화
+  justSubmitted = false;
 
   document.getElementById('btn-prev').disabled = current === 0;
   document.getElementById('btn-next').disabled = current === total - 1;
@@ -547,9 +534,10 @@ function scheduleAdvance(bar) {
 function submit() {
   const val = document.getElementById('answer-input').value.trim();
   if (!val) return;
+
   const result = isCorrect(val, QUESTIONS[current].a) ? 'correct' : 'wrong';
-// 상태와 입력값을 객체로 함께 저장합니다.
-  answered[current] = { status: result, userAns: val };
+  answered[current] = result;
+  userAnswers[current] = val;
 
   if (result === 'wrong') {
     const sec = document.getElementById('quiz-section');
@@ -558,7 +546,7 @@ function submit() {
     sec.classList.add('shake');
   }
 
-  justSubmitted = true; // 확인 버튼으로 제출했음을 표시
+  justSubmitted = true;
   render();
 }
 
@@ -566,6 +554,7 @@ function showResult() {
   document.getElementById('quiz-section').style.display = 'none';
   document.getElementById('result-screen').style.display = 'block';
   document.getElementById('review-screen').style.display = 'none';
+
   const correct = answered.filter(x => x === 'correct').length;
   const wrong   = answered.filter(x => x === 'wrong').length;
   document.getElementById('res-correct').textContent = correct;
@@ -580,14 +569,13 @@ function restart() {
   init();
 }
 
-// ── 오답노트 ──────────────────────────────────────────────────────────
 function showReview() {
   document.getElementById('result-screen').style.display = 'none';
   document.getElementById('review-screen').style.display = 'block';
 
   const wrongList = QUESTIONS
-    .map((q, i) => ({ q, i, state: answered[i] }))
-    .filter(x => x.state === 'wrong');
+    .map((q, i) => ({ q, i }))
+    .filter(x => answered[x.i] === 'wrong');
 
   const list = document.getElementById('review-list');
   if (wrongList.length === 0) {
@@ -600,6 +588,7 @@ function showReview() {
       <div class="review-qnum">오답 ${idx + 1}</div>
       <div class="review-q">${x.q.q}</div>
       <div class="review-meta">
+        <span class="my-ans">내 답: ${userAnswers[x.i]}</span>
         <span class="right-ans">정답: ${x.q.a}</span>
       </div>
     </div>
@@ -611,7 +600,6 @@ function backToResult() {
   document.getElementById('result-screen').style.display = 'block';
 }
 
-// ── 이벤트 ────────────────────────────────────────────────────────────
 document.getElementById('btn-submit').addEventListener('click', submit);
 document.getElementById('answer-input').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 document.getElementById('btn-prev').addEventListener('click', () => {
