@@ -303,7 +303,7 @@ const QUESTIONS_RAW = [
   { q: "(  )은 온갖 사물을 인터넷에 연결하여 부가가치를 높이는 기술이다.", a: "사물 인터넷" },
   { q: "(  )는 엄청난 양의 데이터에서 가치 있는 정보를 추출하는 기술이다.", a: "빅데이터" },
   { q: "다양한 정보를 체계적으로 모아놓은 것을 (  )라고 한다.", a: "데이터베이스" },
-  { q: "블록체인 기술을 사용하여 위조, 변조, 복제를 할 수 없게 만든 디지털 인증서를 (  )이라고 한다.", a: "대체 불가 토큰" },
+  { q: "블록체인 기술을 사용하여 위조, 변조, 복제를 할 수 없게 만든 디지털 인증서를 (  )이라고 한다.", a: ["대체 불가 토큰" , "NFT"] },
   { q: "(  )은 가상현실, 증강현실, 혼합현실을 아우르는 최상위의 개념이다.", a: "확장 현실" },
   { q: "(  )는 방송 시간이나 플랫폼의 제한 없이 TV, 노트북, 스마트폰으로 언제든 동영상 콘텐츠를 즐길 수 있는 서비스이다.", a: "OTT" },
   { q: "언제 어디서든 컴퓨팅 파워나 소프트웨어에 접근할 수 있는 컴퓨팅 환경을 (  )이라고 한다.", a: "클라우드 컴퓨팅" },
@@ -339,9 +339,9 @@ const QUESTIONS_RAW = [
   { q: "CPU, GPU, 무선통신을 하나의 칩에 구현한 프로세스를 (  )라고 한다.", a: "AP" },
   { q: "(  )는 장치를 연결하는 선의 집합이자 데이터가 다니는 통로이다.", a: "버스" },
   { q: "(  )는 CPU와 메모리 등 다양한 컴퓨터 부품을 연결하고 전원을 공급하는 판이다.", a: "메인보드" },
-  { q: "폰노이만 구조의 가장 중요한 특징은 프로그램이 (  )에 올라와야 실행할 수 있다는 것이다.", a: "메인 메모리" },
-  { q: "반도체 메모리의 두 가지 종류 중 읽고 쓸 수 있는 것은 (  )이다.", a: "램" },
-  { q: "반도체 메모리의 두 가지 종류 중 읽기만 가능한 메모리는 (  )이다.", a: "롬" },
+  { q: "폰노이만 구조의 가장 중요한 특징은 프로그램이 (  )에 올라와야 실행할 수 있다는 것이다.", a: "메인메모리" },
+  { q: "반도체 메모리의 두 가지 종류 중 읽고 쓸 수 있는 것은 (  )이다.", a: ["램" , "RAM"] },
+  { q: "반도체 메모리의 두 가지 종류 중 읽기만 가능한 메모리는 (  )이다.", a: ["롬" , "ROM"] },
   { q: "비휘발성 램 중에서 (  )는 SSD나 SD 카드에 사용된다.", a: "플래시 메모리" },
   { q: "롬 중에서 (  )은 여러 번 쓰고 지울 수 있어 바이오스를 저장하는 데 사용된다.", a: "EPROM" },
   { q: "CPU를 구성하는 주요 장치는 제어 장치, 산술 논리 연산 장치, (  )이다.", a: "레지스터" },
@@ -397,7 +397,7 @@ const QUESTIONS_RAW = [
   { q: "텍스트로 쓰인 문장을 사람의 목소리로 변환해주는 기술을 (  )이라 부른다.", a: "음성 합성" },
   { q: "인공지능의 자연어 처리 기술을 응용하여 만들어지는 기사를 (  )이라 부른다.", a: "로봇 저널리즘" },
   { q: "투자금 규모와 성격, 목표 수익률 등을 분석한 뒤 투자 자문을 하는 인공지능 자산 관리 서비스를 (  )라 부른다.", a: "로보어드바이저" },
-  { q: "원본 동영상에 새로운 얼굴을 입혀 사람을 속이는 기술을 (  )라 부른다.", a: "deepfake" },
+  { q: "원본 동영상에 새로운 얼굴을 입혀 사람을 속이는 기술을 (  )라 부른다.", a: ["deepfake" , "딥페이크"] },
   { q: "저장된 데이터 안에서 체계적이고 자동으로 통계적 규칙이나 패턴을 찾아내는 작업을 (  )이라 부른다.", a: "데이터 마이닝" },
   { q: "엄청난 양의 데이터를 저장하는 기술과 저장된 데이터에서 의미 있는 패턴을 찾아내는 시스템을 (  )라 부른다.", a: "빅데이터" },
   { q: "손으로 쓴 전화번호부와 같이 정해진 틀이 없는 데이터를 (  ) 데이터라 부른다.", a: "비정형" },
@@ -441,8 +441,15 @@ function normalize(str) {
 }
 
 function isCorrect(input, answer) {
-  return normalize(input) === normalize(answer);
-}
+ 
+ if (Array.isArray(answer)) {
+  
+  return answer.some(a => normalize(input) === normalize(a));
+  
+  }
+   return normalize(input) === normalize(answer);
+ 
+ }
 
 function updateScores() {
   const total = QUESTIONS.length;
@@ -493,7 +500,7 @@ function render() {
     fb.innerHTML = '';
     input.focus();
   } else if (state === 'correct') {
-    input.value = q.a;
+    input.value = Array.isArray(q.a) ? q.a[0] : q.a;
     input.disabled = true;
     btnSub.disabled = true;
     fb.className = 'feedback correct show';
@@ -504,7 +511,8 @@ function render() {
     input.disabled = true;
     btnSub.disabled = true;
     fb.className = 'feedback wrong show';
-    fb.innerHTML = `✗ 오답<div class="correct-answer">정답: ${q.a}</div>`;
+    const answerText = Array.isArray(q.a) ? q.a.join(' / ') : q.a;
+    fb.innerHTML = `✗ 오답<div class="correct-answer">정답: ${answerText}</div>`;
     if (justSubmitted) scheduleAdvance(bar);
   }
 
@@ -589,7 +597,7 @@ function showReview() {
       <div class="review-q">${x.q.q}</div>
       <div class="review-meta">
         <span class="my-ans">내 답: ${userAnswers[x.i]}</span>
-        <span class="right-ans">정답: ${x.q.a}</span>
+        <span class="right-ans">정답: ${Array.isArray(x.q.a) ? x.q.a.join(' / ') : x.q.a}</span>
       </div>
     </div>
   `).join('');
