@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  .wrap { width: 100%; max-width: 640px; }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 6px;
+  }
+  .progress-track { height: 2px; background: #ddd; margin-bottom: 32px; }
+  .progress-fill { height: 100%; background: #000; transition: width 0.3s ease; }
+
+  .score-row { display: flex; gap: 16px; font-size: 13px; color: #888; margin-bottom: 40px; }
+  .score-row b { color: #000; }
+
+  .q-number { font-size: 12px; color: #aaa; margin-bottom: 12px; }
+  .q-text { font-size: 17px; line-height: 1.6; margin-bottom: 28px; font-weight: 500; }
+
+  .input-row { display: flex; gap: 8px; }
+  .answer-input {
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .answer-input:focus { border-color: #000; }
+  .answer-input:disabled { background: #f5f5f5; color: #999; }
+
+  .btn {
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  .feedback { margin-top: 14px; font-size: 14px; line-height: 1.5; display: none; }
+  .feedback.show { display: block; }
+  .feedback.correct { color: #000; }
+  .feedback.wrong { color: #888; }
+  .feedback .correct-answer { margin-top: 4px; font-size: 13px; }
+
+  .divider { border: none; border-top: 1px solid #eee; margin: 32px 0; }
+
+  .nav-row { display: flex; justify-content: space-between; }
+  .btn-nav {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    color: #000;
+  }
+  .btn-nav:hover { border-color: #000; }
+  .btn-nav:disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
+
+  #result-screen { display: none; text-align: center; padding-top: 40px; }
+  .result-score { font-size: 56px; font-weight: 700; letter-spacing: -2px; margin-bottom: 8px; }
+  .result-sub { font-size: 14px; color: #888; margin-bottom: 40px; }
+  .result-detail { display: flex; justify-content: center; gap: 40px; margin-bottom: 40px; }
+  .result-detail .item { font-size: 13px; color: #888; }
+  .result-detail .item b { display: block; font-size: 24px; color: #000; margin-bottom: 2px; }
+  .btn-restart {
+    background: #000; color: #fff; border: none; border-radius: 4px;
+    padding: 12px 32px; font-size: 14px; font-family: inherit; cursor: pointer;
+  }
+
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-6px)}
+    75%{transform:translateX(6px)}
+  }
+  .shake { animation: shake 0.25s ease; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="progress-meta">
+    <span id="prog-label">0 / 0</span>
+    <span id="prog-pct">0%</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+  <div class="score-row">
+    <span>정답 <b id="sc-correct">0</b></span>
+    <span>오답 <b id="sc-wrong">0</b></span>
+    <span>남은 문제 <b id="sc-remain">0</b></span>
+  </div>
+
+  <div id="quiz-section">
+    <div class="q-number" id="q-number">Q1</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="input-row">
+      <input class="answer-input" id="answer-input" type="text" placeholder="정답 입력" autocomplete="off" />
+      <button class="btn" id="btn-submit">확인</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <hr class="divider">
+    <div class="nav-row">
+      <button class="btn-nav" id="btn-prev">← 이전</button>
+      <button class="btn-nav" id="btn-next">다음 →</button>
+    </div>
+  </div>
+
+  <div id="result-screen">
+    <div class="result-score" id="res-pct">0%</div>
+    <div class="result-sub">모든 문제 완료</div>
+    <div class="result-detail">
+      <div class="item"><b id="res-correct">0</b>정답</div>
+      <div class="item"><b id="res-wrong">0</b>오답</div>
+    </div>
+    <button class="btn-restart" onclick="restart()">다시 풀기</button>
+  </div>
+
+</div>
+<script>
+const QUESTIONS = [
+  { q: "(  )은 온갖 사물을 인터넷에 연결하여 부가가치를 높이는 기술이다.", a: "사물 인터넷" },
+  { q: "(  )는 엄청난 양의 데이터에서 가치 있는 정보를 추출하는 기술이다.", a: "빅데이터" },
+  { q: "다양한 정보를 체계적으로 모아놓은 것을 (  )라고 한다.", a: "데이터베이스" },
+  { q: "블록체인 기술을 사용하여 위조, 변조, 복제를 할 수 없게 만든 디지털 인증서를 (  )이라고 한다.", a: "대체 불가 토큰" },
+  { q: "(  )은 가상현실, 증강현실, 혼합현실을 아우르는 최상위의 개념이다.", a: "확장 현실" },
+  { q: "(  )는 방송 시간이나 플랫폼의 제한 없이 TV, 노트북, 스마트폰으로 언제든 동영상 콘텐츠를 즐길 수 있는 서비스이다.", a: "OTT" },
+  { q: "언제 어디서든 컴퓨팅 파워나 소프트웨어에 접근할 수 있는 컴퓨팅 환경을 (  )이라고 한다.", a: "클라우드 컴퓨팅" },
+  { q: "대량의 데이터를 이용하여 쇼핑몰의 상품 추천, 유튜브의 맞춤 동영상, 넷플릭스의 추천 콘텐츠를 가능하게 하는 기술은 (  )이다.", a: "빅데이터" },
+  { q: "P2P 네트워크에 데이터를 분산하여 관리하는 (  ) 기술은 온라인 금융 거래, 게임, 암호화폐 등에 사용된다.", a: "블록체인" },
+  { q: "컴퓨터 하드웨어의 5대 구성 요소는 CPU, 메인메모리, (  ), 입력 장치, 출력 장치이다.", a: "저장 장치" },
+  { q: "컴퓨터의 필수 장치에 해당하는 하드웨어는 (  )와 메인메모리이다.", a: "CPU" },
+  { q: "컴퓨터에서 그래픽 작업을 맡아 처리하는 하드웨어는 (  )이다.", a: "GPU" },
+  { q: "스마트 워치, 스마트 TV, 스마트 자동차 등에 탑재된 컴퓨터를 (  )이라고 한다.", a: "임베디드 시스템" },
+  { q: "인공위성으로부터 신호를 받아 위치 정보를 얻는 센서는 (  ) 센서이다.", a: "GPS" },
+  { q: "기울기와 방향을 인식하는 센서는 (  ) 센서이다.", a: "자이로" },
+  { q: "(  )은 어떤 문제를 해결하기 위한 절차나 방법을 의미한다.", a: "알고리즘" },
+  { q: "(  )는 컴퓨터를 관리하는 규칙과 절차를 규정한 소프트웨어이다.", a: "운영체제" },
+  { q: "컴퓨터의 운영체제는 (  )과 사용자 인터페이스로 구성되며, (  )은 운영체제에서 핵심 기능을 담당하는 부분이다.", a: "커널" },
+  { q: "(  )는 커널에 명령을 내리거나 처리 결과를 받는다.", a: "사용자 인터페이스" },
+  { q: "제품 사용법을 따로 설명하지 않아도 조작이 가능한 인터페이스를 (  ) 인터페이스라고 한다.", a: "사용자 경험" },
+  { q: "웹 브라우저에서 연결된 문서나 자료로 이동하는 참조 고리를 (  )라고 한다.", a: "하이퍼 링크" },
+  { q: "웹 브라우저로 볼 수 있는 웹 페이지를 다른 말로 (  )라고 한다.", a: "하이퍼 텍스트" },
+  { q: "0과 1의 중첩을 허용하여 특정 분야에서 기존의 컴퓨터보다 우수한 성능을 보일 수 있는 컴퓨터는 (  )이다.", a: "양자 컴퓨터" },
+  { q: "4바이트는 (  )비트이다.", a: "32" },
+  { q: "1(  )는 약 1,000MB이다.", a: "GB" },
+  { q: "(  )은 네트워크에서 다루는 일정 크기의 데이터이다.", a: "패킷" },
+  { q: "(  )는 1초 동안 클록 틱이 몇 번 발생했는지를 나타내는 단위이다.", a: "Hz" },
+  { q: "(  )는 네트워크에서 1초 동안 보내는 데이터의 양을 나타내는 단위이다.", a: "bps" },
+  { q: "이미지를 종이에 출력할 때는 (  ) 색상을 사용한다.", a: "CMYK" },
+  { q: "모니터에 색상을 표현할 때는 (  ) 색상을 사용한다.", a: "RGB" },
+  { q: "RGB (255, 0, 0)의 색상은 (  )이다.", a: "빨간색" },
+  { q: "RGB (0, 255, 0)의 색상은 (  )이다.", a: "초록색" },
+  { q: "RGB (0, 0, 255)의 색상은 (  )이다.", a: "파란색" },
+  { q: "RGB (0, 0, 0)의 색상은 (  )이다.", a: "검정색" },
+  { q: "RGB (255, 255, 255)의 색상은 (  )이다.", a: "흰색" },
+  { q: "빨간색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#ff0000" },
+  { q: "초록색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#00ff00" },
+  { q: "파란색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#0000ff" },
+  { q: "검은색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#000000" },
+  { q: "하얀색을 16진수 RGB 코드로 나타내면 (  )이다.", a: "#ffffff" },
+  { q: "아스키코드가 표현하는 데이터의 종류는 (  )이다.", a: "문자" },
+  { q: "아스키코드는 문자 하나를 저장하는 데 (  )비트를 사용한다.", a: "8" },
+  { q: "(  )는 세계 각국의 문자를 통일되게 표현하고 다룰 수 있도록 만들어진 국제적인 코드 규약이다.", a: "유니코드" },
+  { q: "(  )는 컴퓨터 하드웨어 중 명령어를 해석하고 실행하는 장치로, 인간의 두뇌와 같은 역할을 한다.", a: "CPU" },
+  { q: "(  )는 작업에 필요한 프로그램과 데이터를 저장하는 장치로, CPU에 데이터를 넘겨주거나 CPU에서 처리한 데이터를 저장한다.", a: "메인메모리" },
+  { q: "CPU, GPU, 무선통신을 하나의 칩에 구현한 프로세스를 (  )라고 한다.", a: "AP" },
+  { q: "(  )는 장치를 연결하는 선의 집합이자 데이터가 다니는 통로이다.", a: "버스" },
+  { q: "(  )는 CPU와 메모리 등 다양한 컴퓨터 부품을 연결하고 전원을 공급하는 판이다.", a: "메인보드" },
+  { q: "폰노이만 구조의 가장 중요한 특징은 프로그램이 (  )에 올라와야 실행할 수 있다는 것이다.", a: "메인 메모리" },
+  { q: "반도체 메모리의 두 가지 종류 중 읽고 쓸 수 있는 것은 (  )이다.", a: "램" },
+  { q: "반도체 메모리의 두 가지 종류 중 읽기만 가능한 메모리는 (  )이다.", a: "롬" },
+  { q: "비휘발성 램 중에서 (  )는 SSD나 SD 카드에 사용된다.", a: "플래시 메모리" },
+  { q: "롬 중에서 (  )은 여러 번 쓰고 지울 수 있어 바이오스를 저장하는 데 사용된다.", a: "EPROM" },
+  { q: "CPU를 구성하는 주요 장치는 제어 장치, 산술 논리 연산 장치, (  )이다.", a: "레지스터" },
+  { q: "CPU의 (  )는 주어진 데이터를 가지고 덧셈, 뺄셈, 곱셈, 나눗셈 등 산술 연산을 수행한다.", a: "산술 논리 연산 장치" },
+  { q: "CPU 내 데이터를 임시로 보관하는 장치는 (  )이다.", a: "레지스터" },
+  { q: "32비트 CPU 시스템의 경우 가능한 메인메모리의 최대 크기는 약 (  )GB이다.", a: "4" },
+  { q: "NVMe는 (  )를 연결하도록 특별히 만들어진 인터페이스이다.", a: "SSD" },
+  { q: "포트 중에서 (  )는 하드디스크, SSD, CD-ROM 등의 저장 장치를 연결하는 데 사용된다.", a: "SATA" },
+  { q: "포트 중에서 USB는 (  ) 공급이 가능하다.", a: "전원" },
+  { q: "(  )는 전송 속도에 차이가 있는 두 장치 사이에서 속도 차이를 완화하는 메모리 공간이다.", a: "버퍼" },
+  { q: "(  )는 인쇄할 데이터를 저장하고 있다가 순차적으로 프린터에 보낸다.", a: "스풀러" },
+  { q: "(  ) 기능을 사용하면 버퍼가 다 차지 않았어도 강제로 버퍼의 데이터를 저장 장치로 옮긴다.", a: "하드웨어 안전 제거" },
+  { q: "(  )은 하나의 컴퓨터에 CPU를 여러 개 설치한 시스템이다.", a: "멀티 프로세서 시스템" },
+  { q: "(  )은 칩 하나에 CPU의 핵심인 코어를 여러 개 구현한 시스템이다.", a: "멀티 코어 시스템" },
+  { q: "하나의 CPU에서 여러 가지 명령을 동시에 처리하는 방식을 (  )라고 한다.", a: "명령어 병렬처리" },
+  { q: "(  )는 문자, 오디오, 이미지, 동영상 등 복합적인 데이터이다.", a: "멀티 미디어" },
+  { q: "자동차 속도계, 바늘이 달린 시계, 수은주 온도계 등은 모두 연속적으로 변하는 값이므로 (  )이다.", a: "아날로그" },
+  { q: "아날로그 상태의 연속적인 값을 숫자나 문자 등으로 끊어 불연속적으로 표현한 것은 (  )이다.", a: "디지털" },
+  { q: "아날로그를 디지털로 변환하는 과정에서 아날로그 신호를 일정 간격으로 자르는 과정을 (  )이라고 한다.", a: "샘플링" },
+  { q: "아날로그를 디지털로 변환하는 과정에서 눈금을 사용하여 디지털 값으로 변환하는 것을 (  )라고 한다.", a: "양자화" },
+  { q: "문서나 중요한 데이터의 압축에는 (  ) 압축을 사용한다.", a: "비손실" },
+  { q: "JPG, MOV, MP4 등 멀티미디어 파일은 (  ) 압축을 사용한다.", a: "손실" },
+  { q: "ZIP이나 RAR은 (  ) 압축을 사용한다.", a: "비손실" },
+  { q: "특정 신호가 가지는 범위를 (  )라 부른다.", a: "대역폭" },
+  { q: "인간이 들을 수 있는 소리 범위는 20Hz~20kHz이며, 이를 (  ) 주파수라고 한다.", a: "가청" },
+  { q: "오디오 포맷 중 압축 알고리즘을 사용하지 않는 것은 (  ) 포맷이다.", a: "WAV" },
+  { q: "MP3와 AAC는 (  ) 압축을 사용하는 오디오 포맷이다.", a: "손실" },
+  { q: "MP3에서 사용할 수 있는 최대 비트 전송률은 (  )kbps이다.", a: "320" },
+  { q: "스테레오 음악에 대한 비트 전송률 계산식은 샘플링 주파수 × 양자화 비트 × (  )이다.", a: "2" },
+  { q: "모노 음악의 비트 전송률 계산식은 (  ) × 양자화 비트이다.", a: "샘플링 주파수" },
+  { q: "디지털 이미지를 구성하는 각각의 점을 (  )이라고 한다.", a: "픽셀" },
+  { q: "(  )는 영어로 날 것이라는 뜻으로, 디지털카메라가 찍은 사진 원본의 포맷이다.", a: "Raw" },
+  { q: "이미지를 압축하지 않고 그대로 저장하는 파일 포맷은 (  )이다.", a: "BMP" },
+  { q: "이미지 포맷 중 움직이는 사진을 만들 수 있는 것은 (  )이다.", a: "GIF" },
+  { q: "비손실 압축을 사용하는 이미지 포맷 중 색상에 제한이 없고 웹에서 사용 가능한 것은 (  )이다.", a: "PNG" },
+  { q: "비손실 압축을 사용하는 이미지 포맷 중 256색의 제한이 있고 투명한 배경색을 지원하는 것은 (  )이다.", a: "GIF" },
+  { q: "손실 압축을 사용하는 이미지 포맷 중 사용자가 이미지 품질을 조정할 수 있는 것은 (  )이다.", a: "JPEG" },
+  { q: "비손실 압축을 사용하는 이미지 포맷 중 투명한 배경색을 지원하는 것은 (  )이다.", a: "PNG" },
+  { q: "와이어 프레임을 만들어 넣으면 빛의 밝기나 물체 이동에 따라 자동으로 질감을 만들어 주는 소프트웨어를 (  )이라고 한다.", a: "그래픽 엔진" },
+  { q: "(  )은 가상현실과 증강현실을 통합하는 개념이다.", a: "확장현실" },
+  { q: "(  )은 컴퓨터 등을 사용한 인공적인 기술로 만들어 낸 실제와 유사하지만 실제가 아닌 환경이나 상황을 의미한다.", a: "가상현실" },
+  { q: "(  )은 실제로 존재하는 환경에 가상의 사물이나 정보를 합성하는 컴퓨터 그래픽 기술이다.", a: "증강현실" },
+  { q: "확장현실 하위 기술 중 전투기 조종사의 헬멧에 정보를 보여주는 것과 가장 가까운 기술은 (  )현실이다.", a: "증강" },
+  { q: "초점 거리가 50mm 정도이고 인간의 눈과 가장 유사하게 찍히는 렌즈를 (  )라고 한다.", a: "표준 렌즈" },
+  { q: "초점 거리가 30mm 이하이고 풍경을 찍는 데 사용하며 왜곡이 생기는 렌즈를 (  )라고 한다.", a: "광각 렌즈" },
+  { q: "초점 거리가 80mm 이상이고 멀리 있는 것을 가까이 찍을 때 사용하는 렌즈를 (  )라고 한다.", a: "망원 렌즈" },
+  { q: "컴퓨터 스스로가 학습을 통하여 결론을 유출할 수 있는 인공지능 시스템을 (  )이라 부른다.", a: "머신러닝" },
+  { q: "인공신경망 알고리즘에 많은 양의 데이터를 학습시켜 결과를 얻는 인공지능을 (  )이라 부른다.", a: "딥러닝" },
+  { q: "인공지능 연산에 사용되기 위해 특별히 제작된 반도체가 (  )이다.", a: "NPU" },
+  { q: "모든 경우의 수를 트리 형태로 만든 것을 (  )라고 한다.", a: "결정 트리" },
+  { q: "생성형 인공지능에 어떻게 결과를 만들어야 하는지 자연어로 설명하는 것을 (  )라 부른다.", a: "프롬프트" },
+  { q: "사람이 말하는 음성 언어를 문자 데이터로 전환하는 기술을 (  )이라 부른다.", a: "음성 인식" },
+  { q: "텍스트로 쓰인 문장을 사람의 목소리로 변환해주는 기술을 (  )이라 부른다.", a: "음성 합성" },
+  { q: "인공지능의 자연어 처리 기술을 응용하여 만들어지는 기사를 (  )이라 부른다.", a: "로봇 저널리즘" },
+  { q: "투자금 규모와 성격, 목표 수익률 등을 분석한 뒤 투자 자문을 하는 인공지능 자산 관리 서비스를 (  )라 부른다.", a: "로보어드바이저" },
+  { q: "원본 동영상에 새로운 얼굴을 입혀 사람을 속이는 기술을 (  )라 부른다.", a: "deepfake" },
+  { q: "저장된 데이터 안에서 체계적이고 자동으로 통계적 규칙이나 패턴을 찾아내는 작업을 (  )이라 부른다.", a: "데이터 마이닝" },
+  { q: "엄청난 양의 데이터를 저장하는 기술과 저장된 데이터에서 의미 있는 패턴을 찾아내는 시스템을 (  )라 부른다.", a: "빅데이터" },
+  { q: "손으로 쓴 전화번호부와 같이 정해진 틀이 없는 데이터를 (  ) 데이터라 부른다.", a: "비정형" },
+  { q: "(  ) 데이터는 책, 문서처럼 형식을 가지는 데이터를 의미한다.", a: "정형" },
+];
+
+let current = 0;
+let answered = [];
+
+function init() {
+  answered = Array(QUESTIONS.length).fill(null);
+  current = 0;
+  render();
+}
+
+function normalize(str) {
+  return str.replace(/\s+/g, '').toLowerCase();
+}
+
+function isCorrect(input, answer) {
+  return normalize(input) === normalize(answer);
+}
+
+function render() {
+  const total = QUESTIONS.length;
+  const q = QUESTIONS[current];
+  const state = answered[current];
+
+  const done = answered.filter(x => x !== null).length;
+  const pct = Math.round(done / total * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `${done} / ${total}`;
+  document.getElementById('prog-pct').textContent = pct + '%';
+
+  const correct = answered.filter(x => x === 'correct').length;
+  const wrong   = answered.filter(x => x === 'wrong').length;
+  document.getElementById('sc-correct').textContent = correct;
+  document.getElementById('sc-wrong').textContent   = wrong;
+  document.getElementById('sc-remain').textContent  = total - done;
+
+  document.getElementById('q-number').textContent = `Q${current + 1} / ${total}`;
+  document.getElementById('q-text').textContent = q.q;
+
+  const input  = document.getElementById('answer-input');
+  const btnSub = document.getElementById('btn-submit');
+  const fb     = document.getElementById('feedback');
+
+  if (state === null) {
+    input.value = '';
+    input.disabled = false;
+    btnSub.disabled = false;
+    fb.className = 'feedback';
+    fb.innerHTML = '';
+    input.focus();
+  } else if (state === 'correct') {
+    input.value = q.a;
+    input.disabled = true;
+    btnSub.disabled = true;
+    fb.className = 'feedback correct show';
+    fb.innerHTML = '✓ 정답';
+  } else {
+    input.disabled = true;
+    btnSub.disabled = true;
+    fb.className = 'feedback wrong show';
+    fb.innerHTML = `✗ 오답<div class="correct-answer">정답: ${q.a}</div>`;
+  }
+
+  document.getElementById('btn-prev').disabled = current === 0;
+  document.getElementById('btn-next').disabled = current === total - 1;
+}
+
+function submit() {
+  const val = document.getElementById('answer-input').value.trim();
+  if (!val) return;
+  const result = isCorrect(val, QUESTIONS[current].a) ? 'correct' : 'wrong';
+  answered[current] = result;
+
+  if (result === 'wrong') {
+    const sec = document.getElementById('quiz-section');
+    sec.classList.remove('shake');
+    void sec.offsetWidth;
+    sec.classList.add('shake');
+  }
+
+  render();
+  if (answered.every(x => x !== null)) setTimeout(showResult, 500);
+}
+
+function showResult() {
+  document.getElementById('quiz-section').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'block';
+  const correct = answered.filter(x => x === 'correct').length;
+  const wrong   = answered.filter(x => x === 'wrong').length;
+  document.getElementById('res-correct').textContent = correct;
+  document.getElementById('res-wrong').textContent   = wrong;
+  document.getElementById('res-pct').textContent = Math.round(correct / QUESTIONS.length * 100) + '%';
+}
+
+function restart() {
+  document.getElementById('quiz-section').style.display = '';
+  document.getElementById('result-screen').style.display = 'none';
+  init();
+}
+
+document.getElementById('btn-submit').addEventListener('click', submit);
+document.getElementById('answer-input').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+document.getElementById('btn-prev').addEventListener('click', () => { if (current > 0) { current--; render(); } });
+document.getElementById('btn-next').addEventListener('click', () => { if (current < QUESTIONS.length - 1) { current++; render(); } });
+
+init();
+</script>
+</body>
+</html>
